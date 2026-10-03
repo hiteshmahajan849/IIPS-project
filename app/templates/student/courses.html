@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}My Courses{% endblock %}
+{% block content %}
+<h1>My Courses</h1>
+
+{% if not cycle %}
+  <div class="card">
+    <p>There is no feedback cycle open right now. Please check back later.</p>
+  </div>
+{% elif not courses %}
+  <div class="card">
+    <p>You have no pending feedback for the open cycle (Semester {{ cycle['semester'] }}).
+       Either you are not enrolled in any course this semester, or you have already submitted
+       feedback for all of them. Thank you!</p>
+  </div>
+{% else %}
+  <p class="muted">Feedback cycle: Semester {{ cycle['semester'] }} &middot; closes {{ cycle['end_date'] }}</p>
+  <div class="card-grid">
+    {% for course in courses %}
+    <div class="card course-card">
+      <h2>{{ course['code'] }}</h2>
+      <p>{{ course['name'] }}</p>
+      <a class="btn-primary" href="{{ url_for('feedback.feedback_form', course_id=course['course_id']) }}">
+        Give Feedback
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

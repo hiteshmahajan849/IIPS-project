@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Feedback - {{ course['code'] }}{% endblock %}
+{% block content %}
+<div class="card feedback-card">
+  <h1>{{ course['code'] }} &mdash; {{ course['name'] }}</h1>
+  <p class="muted">Cycle: Semester {{ cycle['semester'] }} (closes {{ cycle['end_date'] }})</p>
+
+  <form method="post" action="{{ url_for('feedback.submit_feedback', course_id=course['course_id']) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    {% for aspect, label in [('teaching','Teaching'), ('content','Course Content'),
+                              ('labs','Labs'), ('infrastructure','Infrastructure'),
+                              ('assessment','Assessment')] %}
+    <fieldset class="rating-row">
+      <legend>{{ label }}</legend>
+      {% for i in range(1, 6) %}
+      <label class="radio-pill">
+        <input type="radio" name="{{ aspect }}" value="{{ i }}" required> {{ i }}
+      </label>
+      {% endfor %}
+    </fieldset>
+    {% endfor %}
+
+    <label for="comment">Comments (English or Hinglish) &mdash; optional</label>
+    <textarea id="comment" name="comment" rows="4" maxlength="2000"
+              placeholder="e.g. Teaching accha tha but projector kaam nahi karta"></textarea>
+
+    <p class="privacy-note">Your feedback is completely anonymous. Your identity is used only to
+       prevent duplicate submissions and is never linked to your comments or ratings.</p>
+
+    <button type="submit" class="btn-primary">Submit Feedback</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Department Dashboard{% endblock %}
+{% block content %}
+<h1>Department Dashboard</h1>
+
+<form method="get" class="filter-bar">
+  <label>Semester
+    <select name="semester" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for s in view['semesters'] %}
+      <option value="{{ s }}" {% if filters['semester']==s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Course
+    <select name="course_id" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for c in view['all_courses'] %}
+      <option value="{{ c['course_id'] }}" {% if filters['course_id']==c['course_id'] %}selected{% endif %}>{{ c['code'] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Aspect
+    <select name="aspect" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for a in ['teaching','content','labs','infrastructure','assessment'] %}
+      <option value="{{ a }}" {% if filters['aspect']==a %}selected{% endif %}>{{ a|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <div class="export-links">
+    <a href="{{ url_for('dashboard.export', format='csv', **filters) }}">Export CSV</a>
+    <a href="{{ url_for('dashboard.export', format='pdf', **filters) }}">Export PDF</a>
+  </div>
+</form>
+
+<div class="card">
+  <h2>Alerts ({{ alerts|length }})</h2>
+  {% if not alerts %}
+    <p class="muted">No active alerts.</p>
+  {% else %}
+  <ul class="alert-list">
+    {% for a in alerts %}
+    <li class="alert-item">
+      <strong>{{ a['code'] }}</strong> ({{ a['faculty_name'] }}) &mdash; {{ a['reason'] }}
+      <form method="post" action="{{ url_for('dashboard.acknowledge_alert', alert_id=a['alert_id']) }}" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="link-button">Acknowledge</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
+<div class="chart-row">
+  <div class="card chart-card">
+    <h2>Course Comparison (avg rating)</h2>
+    <canvas id="courseChart" height="240"></canvas>
+  </div>
+  <div class="card chart-card">
+    <h2>Sentiment Trend over Semesters</h2>
+    <canvas id="trendChart" height="240"></canvas>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Courses</h2>
+  <table class="data-table">
+    <thead><tr><th>Course</th><th>Faculty</th><th>Avg</th><th>Neg %</th><th>Responses</th></tr></thead>
+    <tbody>
+      {% for c in view['courses'] %}
+      <tr>
+        <td>{{ c['code'] }} &mdash; {{ c['name'] }}</td>
+        <td>{{ c['faculty_name'] }}</td>
+        <td>{{ c['avg_rating'] if c['avg_rating'] is not none else '—' }}</td>
+        <td>{{ c['negative_pct'] }}%</td>
+        <td>{{ c['responses'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const courses = {{ view['courses'] | tojson }};
+  const trend = {{ view['trend'] | tojson }};
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/hod_dashboard.js') }}"></script>
+{% endblock %}

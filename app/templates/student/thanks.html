@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Thank You{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Thank you!</h1>
+  <p>Your feedback has been submitted anonymously and will help improve the course.</p>
+  <a class="btn-primary" href="{{ url_for('feedback.courses') }}">Back to My Courses</a>
+</div>
+{% endblock %}

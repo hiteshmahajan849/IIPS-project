@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Faculty Dashboard{% endblock %}
+{% block content %}
+<h1>Faculty Dashboard</h1>
+
+{% if not my_courses %}
+  <div class="card"><p>No courses are assigned to you yet.</p></div>
+{% else %}
+<form method="get" class="filter-bar">
+  <label>Course
+    <select name="course_id" onchange="this.form.submit()">
+      {% for c in my_courses %}
+      <option value="{{ c['course_id'] }}" {% if selected and c['course_id']==selected['course_id'] %}selected{% endif %}>
+        {{ c['code'] }} - {{ c['name'] }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+{% if selected and view %}
+<div class="stat-row">
+  <div class="stat-tile"><span class="stat-value">{{ view['avg_overall'] or '—' }}</span><span class="stat-label">Avg Rating / 5</span></div>
+  <div class="stat-tile"><span class="stat-value">{{ view['responses'] }}</span><span class="stat-label">Responses</span></div>
+  <div class="stat-tile"><span class="stat-value">{{ view['sentiment_pct'].get('positive', 0) }}%</span><span class="stat-label">Positive</span></div>
+  <div class="stat-tile"><span class="stat-value">{{ view['sentiment_pct'].get('negative', 0) }}%</span><span class="stat-label">Negative</span></div>
+</div>
+
+<div class="chart-row">
+  <div class="card chart-card">
+    <h2>Sentiment Split</h2>
+    <canvas id="sentimentChart" height="220"></canvas>
+  </div>
+  <div class="card chart-card">
+    <h2>Ratings by Aspect</h2>
+    <canvas id="aspectChart" height="220"></canvas>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header-row">
+    <h2>Recent Comments (anonymous)</h2>
+    <form method="get" class="inline-form">
+      <input type="hidden" name="course_id" value="{{ selected['course_id'] }}">
+      <select name="label" onchange="this.form.submit()">
+        <option value="" {% if not label_filter %}selected{% endif %}>All</option>
+        <option value="positive" {% if label_filter=='positive' %}selected{% endif %}>Positive</option>
+        <option value="neutral" {% if label_filter=='neutral' %}selected{% endif %}>Neutral</option>
+        <option value="negative" {% if label_filter=='negative' %}selected{% endif %}>Negative</option>
+      </select>
+    </form>
+    <div class="export-links">
+      <a href="{{ url_for('dashboard.export', format='csv', course_id=selected['course_id']) }}">Export CSV</a>
+      <a href="{{ url_for('dashboard.export', format='pdf', course_id=selected['course_id']) }}">Export PDF</a>
+    </div>
+  </div>
+  {% if not comments %}
+    <p class="muted">No comments yet.</p>
+  {% else %}
+  <ul class="comment-list">
+    {% for c in comments %}
+    <li class="comment-item sentiment-{{ c['label'] }}">
+      <span class="badge badge-{{ c['label'] }}">{{ c['label'] }}</span>
+      {{ c['comment'] }}
+      {% if c['aspects'] %}<span class="aspect-tags">[{{ c['aspects'] }}]</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
+<script>
+  const sentimentData = {{ view['sentiment_counts'] | tojson }};
+  const aspectData = {{ view['ratings_by_aspect'] | tojson }};
+</script>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/faculty_dashboard.js') }}"></script>
+{% endblock %}

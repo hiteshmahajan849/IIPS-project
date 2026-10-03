@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}IIPS Feedback System{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">IIPS Feedback &amp; Sentiment System</div>
+    {% if current_role %}
+    <nav class="nav">
+      {% if current_role == 'student' %}<a href="{{ url_for('feedback.courses') }}">My Courses</a>{% endif %}
+      {% if current_role == 'faculty' %}<a href="{{ url_for('dashboard.faculty_home') }}">Dashboard</a>{% endif %}
+      {% if current_role == 'hod' %}<a href="{{ url_for('dashboard.hod_home') }}">Department Dashboard</a>{% endif %}
+      {% if current_role == 'admin' %}<a href="{{ url_for('admin.panel') }}">Admin Panel</a>{% endif %}
+      <span class="user-chip">{{ current_name }} ({{ current_role }})</span>
+      <form action="{{ url_for('auth.logout') }}" method="post" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="link-button">Logout</button>
+      </form>
+    </nav>
+    {% endif %}
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    IIPS AI-Based Student Feedback &amp; Sentiment Analysis System &mdash; prototype build.
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
