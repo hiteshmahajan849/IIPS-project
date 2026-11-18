@@ -1,34 +1,74 @@
 {% extends "base.html" %}
+{% from "_components.html" import icon, page_header %}
 {% block title %}Feedback - {{ course['code'] }}{% endblock %}
 {% block content %}
-<div class="card feedback-card">
-  <h1>{{ course['code'] }} &mdash; {{ course['name'] }}</h1>
-  <p class="muted">Cycle: Semester {{ cycle['semester'] }} (closes {{ cycle['end_date'] }})</p>
+<div class="feedback-card">
+  {{ page_header(course['code'] ~ " · " ~ course['name'], "Semester " ~ cycle['semester'] ~ " · closes " ~ cycle['end_date'], none) }}
 
-  <form method="post" action="{{ url_for('feedback.submit_feedback', course_id=course['course_id']) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="card" data-feedback-form>
+    <div class="form-meta" aria-label="Feedback progress">
+      <strong>Step 1 of 2 · Rate the course</strong>
+      <span>All five aspects are required</span>
+    </div>
+    <div class="progress-track" aria-hidden="true"><span style="width: 50%"></span></div>
 
-    {% for aspect, label in [('teaching','Teaching'), ('content','Course Content'),
-                              ('labs','Labs'), ('infrastructure','Infrastructure'),
-                              ('assessment','Assessment')] %}
-    <fieldset class="rating-row">
-      <legend>{{ label }}</legend>
-      {% for i in range(1, 6) %}
-      <label class="radio-pill">
-        <input type="radio" name="{{ aspect }}" value="{{ i }}" required> {{ i }}
-      </label>
+    <form method="post" action="{{ url_for('feedback.submit_feedback', course_id=course['course_id']) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      {% for aspect, label, description, icon_name in [
+        ('teaching','Teaching','Clarity, support and classroom delivery.','spark'),
+        ('content','Course Content','Relevance, structure and depth of the material.','info'),
+        ('labs','Labs','Practical activities, guidance and hands-on learning.','check'),
+        ('infrastructure','Infrastructure','Classroom, equipment, connectivity and resources.','info'),
+        ('assessment','Assessment','Fairness, feedback and alignment with learning.','check')
+      ] %}
+      <fieldset class="rating-row">
+        <legend>{{ icon(icon_name, 18) }} {{ label }}</legend>
+        <p class="muted">{{ description }}</p>
+        <div class="rating-options">
+          {% for i in range(1, 6) %}
+          <label class="radio-pill">
+            <input type="radio" name="{{ aspect }}" value="{{ i }}" required>
+            <span>{{ i }}</span>
+            <small>{{ ['Poor', 'Needs work', 'Okay', 'Good', 'Excellent'][i - 1] }}</small>
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
       {% endfor %}
-    </fieldset>
-    {% endfor %}
 
-    <label for="comment">Comments (English or Hinglish) &mdash; optional</label>
-    <textarea id="comment" name="comment" rows="4" maxlength="2000"
-              placeholder="e.g. Teaching accha tha but projector kaam nahi karta"></textarea>
+      <label for="comment">Comments (English or Hinglish) &mdash; optional</label>
+      <textarea id="comment" name="comment" rows="5" maxlength="2000"
+                placeholder="What would make this course even better?"></textarea>
+      <div class="form-meta"><span>Share only what feels useful.</span><span id="comment-count">0 / 2000</span></div>
 
-    <p class="privacy-note">Your feedback is completely anonymous. Your identity is used only to
-       prevent duplicate submissions and is never linked to your comments or ratings.</p>
+      <p class="privacy-note">{{ icon('lock', 20) }} <span><strong>Your feedback is completely anonymous.</strong><br>Your identity is used only to prevent duplicate submissions and is never linked to your comments or ratings.</span></p>
 
-    <button type="submit" class="btn-primary">Submit Feedback</button>
-  </form>
+      <button type="submit" class="btn btn-primary" data-submit-feedback>
+        Submit feedback {{ icon('check', 16) }}
+      </button>
+    </form>
+  </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("[data-feedback-form] form");
+    const comment = document.getElementById("comment");
+    const counter = document.getElementById("comment-count");
+    const submit = document.querySelector("[data-submit-feedback]");
+    if (comment && counter) {
+      const updateCount = function () { counter.textContent = comment.value.length + " / 2000"; };
+      comment.addEventListener("input", updateCount);
+      updateCount();
+    }
+    if (form && submit) {
+      form.addEventListener("submit", function () {
+        submit.disabled = true;
+        submit.textContent = "Submitting…";
+      });
+    }
+  });
+</script>
 {% endblock %}

@@ -1,12 +1,13 @@
 {% extends "base.html" %}
+{% from "_components.html" import badge, empty_state, icon, page_header %}
 {% block title %}Faculty Dashboard{% endblock %}
 {% block content %}
-<h1>Faculty Dashboard</h1>
+{{ page_header("Faculty dashboard", "A clear view of how students are experiencing your courses.") }}
 
 {% if not my_courses %}
-  <div class="card"><p>No courses are assigned to you yet.</p></div>
+  <div class="card">{{ empty_state("No courses assigned yet", "Once a course is assigned to you, its anonymous feedback will appear here.", "info") }}</div>
 {% else %}
-<form method="get" class="filter-bar">
+<form method="get" class="filter-bar" aria-label="Dashboard filters">
   <label>Course
     <select name="course_id" onchange="this.form.submit()">
       {% for c in my_courses %}
@@ -20,54 +21,55 @@
 
 {% if selected and view %}
 <div class="stat-row">
-  <div class="stat-tile"><span class="stat-value">{{ view['avg_overall'] or '—' }}</span><span class="stat-label">Avg Rating / 5</span></div>
-  <div class="stat-tile"><span class="stat-value">{{ view['responses'] }}</span><span class="stat-label">Responses</span></div>
-  <div class="stat-tile"><span class="stat-value">{{ view['sentiment_pct'].get('positive', 0) }}%</span><span class="stat-label">Positive</span></div>
-  <div class="stat-tile"><span class="stat-value">{{ view['sentiment_pct'].get('negative', 0) }}%</span><span class="stat-label">Negative</span></div>
+  <div class="stat-tile"><span class="stat-value">{{ view['avg_overall'] or '—' }}</span><span class="stat-label">{{ icon('spark', 16) }} Avg rating / 5</span></div>
+  <div class="stat-tile"><span class="stat-value">{{ view['responses'] }}</span><span class="stat-label">{{ icon('check', 16) }} Published responses</span></div>
+  <div class="stat-tile"><span class="stat-value">{{ view['sentiment_pct'].get('positive', 0) }}%</span><span class="stat-label">{{ icon('check', 16) }} Positive sentiment</span></div>
+  <div class="stat-tile"><span class="stat-value">{{ view['sentiment_pct'].get('negative', 0) }}%</span><span class="stat-label">{{ icon('info', 16) }} Negative sentiment</span></div>
 </div>
 
 <div class="chart-row">
-  <div class="card chart-card">
-    <h2>Sentiment Split</h2>
-    <canvas id="sentimentChart" height="220"></canvas>
-  </div>
-  <div class="card chart-card">
-    <h2>Ratings by Aspect</h2>
-    <canvas id="aspectChart" height="220"></canvas>
-  </div>
+  <section class="card chart-card" aria-labelledby="sentiment-title">
+    <div class="card-header-row"><h2 id="sentiment-title">Sentiment split</h2><span class="muted">Published feedback</span></div>
+    <canvas id="sentimentChart" height="220" aria-label="Sentiment split chart"></canvas>
+  </section>
+  <section class="card chart-card" aria-labelledby="aspect-title">
+    <div class="card-header-row"><h2 id="aspect-title">Ratings by aspect</h2><span class="muted">Out of 5</span></div>
+    <canvas id="aspectChart" height="220" aria-label="Ratings by aspect chart"></canvas>
+  </section>
 </div>
 
-<div class="card">
+<section class="card" aria-labelledby="comments-title">
   <div class="card-header-row">
-    <h2>Recent Comments (anonymous)</h2>
-    <form method="get" class="inline-form">
-      <input type="hidden" name="course_id" value="{{ selected['course_id'] }}">
+    <div><h2 id="comments-title">Recent comments</h2><p class="muted">Anonymous reflections from your students.</p></div>
+    <div class="export-links">
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('dashboard.export', format='csv', course_id=selected['course_id']) }}">{{ icon('check', 15) }} Export CSV</a>
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('dashboard.export', format='pdf', course_id=selected['course_id']) }}">{{ icon('check', 15) }} Export PDF</a>
+    </div>
+  </div>
+  <form method="get" class="filter-bar">
+    <input type="hidden" name="course_id" value="{{ selected['course_id'] }}">
+    <label>Filter sentiment
       <select name="label" onchange="this.form.submit()">
-        <option value="" {% if not label_filter %}selected{% endif %}>All</option>
+        <option value="" {% if not label_filter %}selected{% endif %}>All comments</option>
         <option value="positive" {% if label_filter=='positive' %}selected{% endif %}>Positive</option>
         <option value="neutral" {% if label_filter=='neutral' %}selected{% endif %}>Neutral</option>
         <option value="negative" {% if label_filter=='negative' %}selected{% endif %}>Negative</option>
       </select>
-    </form>
-    <div class="export-links">
-      <a href="{{ url_for('dashboard.export', format='csv', course_id=selected['course_id']) }}">Export CSV</a>
-      <a href="{{ url_for('dashboard.export', format='pdf', course_id=selected['course_id']) }}">Export PDF</a>
-    </div>
-  </div>
+    </label>
+  </form>
   {% if not comments %}
-    <p class="muted">No comments yet.</p>
+    {{ empty_state("No comments yet", "Thoughtful student reflections will appear here after they are published.", "info") }}
   {% else %}
   <ul class="comment-list">
     {% for c in comments %}
-    <li class="comment-item sentiment-{{ c['label'] }}">
-      <span class="badge badge-{{ c['label'] }}">{{ c['label'] }}</span>
-      {{ c['comment'] }}
-      {% if c['aspects'] %}<span class="aspect-tags">[{{ c['aspects'] }}]</span>{% endif %}
+    <li class="comment-item">
+      <div>{{ badge(c['label']) }} {% if c['aspects'] %}<span class="aspect-tags">Aspects: {{ c['aspects']|replace(',', ' · ') }}</span>{% endif %}</div>
+      <span>{{ c['comment'] }}</span>
     </li>
     {% endfor %}
   </ul>
   {% endif %}
-</div>
+</section>
 
 <script>
   const sentimentData = {{ view['sentiment_counts'] | tojson }};

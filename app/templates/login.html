@@ -1,27 +1,60 @@
 {% extends "base.html" %}
+{% from "_components.html" import icon %}
 {% block title %}Login - IIPS Feedback System{% endblock %}
 {% block content %}
-<div class="card login-card">
-  <h1>IIPS Feedback System</h1>
-  <p class="muted">Sign in with your institute account.</p>
-  <form method="post" action="{{ url_for('auth.login_submit') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <label for="email">Email</label>
-    <input type="email" id="email" name="email" required autofocus>
-
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" required>
-
-    <button type="submit" class="btn-primary">Login</button>
-  </form>
-  <details class="demo-hint">
-    <summary>Demo credentials</summary>
-    <ul>
-      <li>Admin: admin@iips.edu / admin123</li>
-      <li>HOD: hod@iips.edu / hod123</li>
-      <li>Faculty: faculty1@iips.edu / faculty123</li>
-      <li>Student: student1@iips.edu / student123</li>
+<div class="login-layout">
+  <section class="login-hero" aria-labelledby="login-hero-title">
+    <span class="semester-chip">IIPS learning community</span>
+    <h1 id="login-hero-title">Your voice shapes better classes.</h1>
+    <p>Share what is working, what could improve, and help every course become more meaningful.</p>
+    <ul class="benefit-list">
+      <li>{{ icon('lock', 20) }} <span><strong>Anonymous by design</strong><br><small>Your identity is never linked to your feedback.</small></span></li>
+      <li>{{ icon('spark', 20) }} <span><strong>Takes about 3 minutes</strong><br><small>A few thoughtful ratings make a real difference.</small></span></li>
+      <li>{{ icon('check', 20) }} <span><strong>Drives real change</strong><br><small>Feedback helps faculty and teams improve.</small></span></li>
     </ul>
-  </details>
+  </section>
+
+  <section class="card login-card" aria-labelledby="login-title">
+    <h2 id="login-title">Welcome back</h2>
+    <p class="muted">Sign in with your institute account.</p>
+    <form method="post" action="{{ url_for('auth.login_submit') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autofocus autocomplete="username">
+
+      <label for="password">Password</label>
+      <div class="password-wrap">
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+        <button type="button" class="password-toggle" aria-controls="password" aria-label="Show password">Show</button>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Login {{ icon('check', 16) }}</button>
+    </form>
+    <details class="demo-hint">
+      <summary>View demo credentials</summary>
+      <ul>
+        <li>Admin: admin@iips.edu / admin123</li>
+        <li>HOD: hod@iips.edu / hod123</li>
+        <li>Faculty: faculty1@iips.edu / faculty123</li>
+        <li>Student: student1@iips.edu / student123</li>
+      </ul>
+    </details>
+  </section>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const password = document.getElementById("password");
+    const toggle = document.querySelector(".password-toggle");
+    if (password && toggle) {
+      toggle.addEventListener("click", function () {
+        const visible = password.type === "text";
+        password.type = visible ? "password" : "text";
+        toggle.textContent = visible ? "Show" : "Hide";
+        toggle.setAttribute("aria-label", visible ? "Show password" : "Hide password");
+      });
+    }
+  });
+</script>
 {% endblock %}

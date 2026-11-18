@@ -1,29 +1,33 @@
 {% extends "base.html" %}
+{% from "_components.html" import empty_state, icon, page_header %}
 {% block title %}My Courses{% endblock %}
 {% block content %}
-<h1>My Courses</h1>
+{{ page_header("Hello, " ~ current_name ~ "!", "Your feedback helps shape clearer, more supportive learning experiences.") }}
 
 {% if not cycle %}
-  <div class="card">
-    <p>There is no feedback cycle open right now. Please check back later.</p>
-  </div>
+  <div class="card">{{ empty_state("Feedback is taking a short break", "There is no feedback cycle open right now. Please check back later.", "info") }}</div>
 {% elif not courses %}
   <div class="card">
-    <p>You have no pending feedback for the open cycle (Semester {{ cycle['semester'] }}).
-       Either you are not enrolled in any course this semester, or you have already submitted
-       feedback for all of them. Thank you!</p>
+    {{ empty_state("You are all caught up", "You have no pending feedback for the open cycle (Semester " ~ cycle['semester'] ~ "). Thank you for helping improve your courses!", "check") }}
   </div>
 {% else %}
-  <p class="muted">Feedback cycle: Semester {{ cycle['semester'] }} &middot; closes {{ cycle['end_date'] }}</p>
+  <div class="card card-header-row">
+    <div>
+      <h2>Courses awaiting your voice</h2>
+      <p class="muted">Semester {{ cycle['semester'] }} · closes {{ cycle['end_date'] }}</p>
+    </div>
+    <span class="semester-chip">{{ courses|length }} pending</span>
+  </div>
   <div class="card-grid">
     {% for course in courses %}
-    <div class="card course-card">
+    <article class="card course-card">
+      <span class="semester-chip">Semester {{ course['semester'] }}</span>
       <h2>{{ course['code'] }}</h2>
-      <p>{{ course['name'] }}</p>
-      <a class="btn-primary" href="{{ url_for('feedback.feedback_form', course_id=course['course_id']) }}">
-        Give Feedback
+      <p class="muted">{{ course['name'] }}</p>
+      <a class="btn btn-primary" href="{{ url_for('feedback.feedback_form', course_id=course['course_id']) }}">
+        Give feedback {{ icon('spark', 16) }}
       </a>
-    </div>
+    </article>
     {% endfor %}
   </div>
 {% endif %}

@@ -1,129 +1,172 @@
 {% extends "base.html" %}
+{% from "_components.html" import badge, empty_state, icon, page_header %}
 {% block title %}Admin Panel{% endblock %}
 {% block content %}
-<h1>Admin Panel</h1>
+{{ page_header("Admin panel", "Keep cycles, access, courses and moderation organised in one place.") }}
 
-<div class="card">
-  <h2>Feedback Cycles</h2>
-  <table class="data-table">
-    <thead><tr><th>Semester</th><th>Start</th><th>End</th><th>Status</th><th></th></tr></thead>
-    <tbody>
-      {% for cy in cycles %}
-      <tr>
-        <td>{{ cy['semester'] }}</td><td>{{ cy['start_date'] }}</td><td>{{ cy['end_date'] }}</td>
-        <td>{{ cy['status'] }}</td>
-        <td>
-          {% if cy['status'] == 'open' %}
-          <form method="post" action="{{ url_for('admin.close_cycle', cycle_id=cy['cycle_id']) }}" class="inline-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button type="submit" class="link-button">Close</button>
-          </form>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <form method="post" action="{{ url_for('admin.create_cycle') }}" class="form-row">
+<nav class="section-nav" aria-label="Admin sections">
+  <a href="#cycles">Cycles</a>
+  <a href="#users">Users</a>
+  <a href="#courses">Courses</a>
+  <a href="#enrollment">Enrollment</a>
+  <a href="#moderation">Moderation</a>
+</nav>
+
+<section class="card" id="cycles" aria-labelledby="cycles-title">
+  <div class="card-header-row"><div><h2 id="cycles-title">Feedback cycles</h2><p class="muted">Open a window for students to share feedback.</p></div></div>
+  {% if cycles %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Semester</th><th>Start</th><th>End</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for cy in cycles %}
+        <tr>
+          <td><strong>Semester {{ cy['semester'] }}</strong></td>
+          <td>{{ cy['start_date'] }}</td><td>{{ cy['end_date'] }}</td>
+          <td>{{ badge(cy['status'], cy['status']) }}</td>
+          <td>
+            {% if cy['status'] == 'open' %}
+            <form method="post" action="{{ url_for('admin.close_cycle', cycle_id=cy['cycle_id']) }}" class="inline-form" onsubmit="return confirm('Close this feedback cycle? Students will no longer be able to submit feedback.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-danger btn-sm">{{ icon('close', 15) }} Close cycle</button>
+            </form>
+            {% else %}<span class="muted">No action</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  <form method="post" action="{{ url_for('admin.create_cycle') }}" class="form-grid">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="number" name="semester" placeholder="Semester" min="1" max="12" required>
-    <input type="date" name="start_date" required>
-    <input type="date" name="end_date" required>
-    <button type="submit" class="btn-secondary">+ New Cycle</button>
+    <label for="cycle-semester">Semester
+      <input id="cycle-semester" type="number" name="semester" min="1" max="12" required>
+    </label>
+    <label for="cycle-start">Start date
+      <input id="cycle-start" type="date" name="start_date" required>
+    </label>
+    <label for="cycle-end">End date
+      <input id="cycle-end" type="date" name="end_date" required>
+    </label>
+    <button type="submit" class="btn btn-secondary">{{ icon('spark', 15) }} New cycle</button>
   </form>
-</div>
+</section>
 
-<div class="card">
-  <h2>Users</h2>
-  <table class="data-table">
-    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Roll No</th></tr></thead>
-    <tbody>
-      {% for u in users %}
-      <tr><td>{{ u['name'] }}</td><td>{{ u['email'] }}</td><td>{{ u['role'] }}</td><td>{{ u['roll_no'] or '—' }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <form method="post" action="{{ url_for('admin.create_user') }}" class="form-row">
+<section class="card" id="users" aria-labelledby="users-title">
+  <div class="card-header-row"><div><h2 id="users-title">Users</h2><p class="muted">Manage institute access and roles.</p></div></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Roll no.</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr><td>{{ u['name'] }}</td><td>{{ u['email'] }}</td><td>{{ badge(u['role'], 'open') }}</td><td>{{ u['roll_no'] or '—' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <form method="post" action="{{ url_for('admin.create_user') }}" class="form-grid">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="text" name="name" placeholder="Full name" required>
-    <input type="email" name="email" placeholder="Email" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <select name="role" required>
-      <option value="student">Student</option>
-      <option value="faculty">Faculty</option>
-      <option value="hod">HOD</option>
-      <option value="admin">Admin</option>
-    </select>
-    <input type="text" name="roll_no" placeholder="Roll No (students)">
-    <input type="text" name="department" placeholder="Department">
-    <button type="submit" class="btn-secondary">+ Add User</button>
+    <label for="user-name">Full name
+      <input id="user-name" type="text" name="name" required>
+    </label>
+    <label for="user-email">Email
+      <input id="user-email" type="email" name="email" required>
+    </label>
+    <label for="user-password">Password
+      <input id="user-password" type="password" name="password" required>
+    </label>
+    <label for="user-role">Role
+      <select id="user-role" name="role" required>
+        <option value="student">Student</option><option value="faculty">Faculty</option>
+        <option value="hod">HOD</option><option value="admin">Admin</option>
+      </select>
+    </label>
+    <label for="user-roll">Roll no. <span class="muted">(students)</span>
+      <input id="user-roll" type="text" name="roll_no">
+    </label>
+    <label for="user-department">Department
+      <input id="user-department" type="text" name="department">
+    </label>
+    <button type="submit" class="btn btn-secondary">{{ icon('spark', 15) }} Add user</button>
   </form>
-</div>
+</section>
 
-<div class="card">
-  <h2>Courses</h2>
-  <table class="data-table">
-    <thead><tr><th>Code</th><th>Name</th><th>Semester</th><th>Faculty</th></tr></thead>
-    <tbody>
-      {% for c in courses %}
-      <tr><td>{{ c['code'] }}</td><td>{{ c['name'] }}</td><td>{{ c['semester'] }}</td><td>{{ c['faculty_name'] }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <form method="post" action="{{ url_for('admin.create_course') }}" class="form-row">
+<section class="card" id="courses" aria-labelledby="courses-title">
+  <div class="card-header-row"><div><h2 id="courses-title">Courses</h2><p class="muted">Create courses and assign faculty owners.</p></div></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Code</th><th>Name</th><th>Semester</th><th>Faculty</th></tr></thead>
+      <tbody>
+        {% for c in courses %}
+        <tr><td><strong>{{ c['code'] }}</strong></td><td>{{ c['name'] }}</td><td>{{ c['semester'] }}</td><td>{{ c['faculty_name'] }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <form method="post" action="{{ url_for('admin.create_course') }}" class="form-grid">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="text" name="code" placeholder="Course code" required>
-    <input type="text" name="name" placeholder="Course name" required>
-    <input type="number" name="semester" placeholder="Semester" min="1" max="12" required>
-    <select name="faculty_id" required>
-      {% for u in users if u['role'] == 'faculty' %}
-      <option value="{{ u['user_id'] }}">{{ u['name'] }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="btn-secondary">+ Add Course</button>
+    <label for="course-code">Course code
+      <input id="course-code" type="text" name="code" required>
+    </label>
+    <label for="course-name">Course name
+      <input id="course-name" type="text" name="name" required>
+    </label>
+    <label for="course-semester">Semester
+      <input id="course-semester" type="number" name="semester" min="1" max="12" required>
+    </label>
+    <label for="course-faculty">Faculty
+      <select id="course-faculty" name="faculty_id" required>
+        {% for u in users if u['role'] == 'faculty' %}<option value="{{ u['user_id'] }}">{{ u['name'] }}</option>{% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn btn-secondary">{{ icon('spark', 15) }} Add course</button>
   </form>
 
-  <h3>Enroll Student</h3>
-  <form method="post" action="{{ url_for('admin.enroll') }}" class="form-row">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <select name="user_id" required>
-      {% for u in users if u['role'] == 'student' %}
-      <option value="{{ u['user_id'] }}">{{ u['name'] }} ({{ u['roll_no'] }})</option>
-      {% endfor %}
-    </select>
-    <select name="course_id" required>
-      {% for c in courses %}
-      <option value="{{ c['course_id'] }}">{{ c['code'] }} - {{ c['name'] }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="btn-secondary">Enroll</button>
-  </form>
-</div>
+  <div id="enrollment" class="subsection">
+    <h3>Enroll a student</h3>
+    <form method="post" action="{{ url_for('admin.enroll') }}" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="enroll-student">Student
+        <select id="enroll-student" name="user_id" required>
+          {% for u in users if u['role'] == 'student' %}<option value="{{ u['user_id'] }}">{{ u['name'] }} ({{ u['roll_no'] }})</option>{% endfor %}
+        </select>
+      </label>
+      <label for="enroll-course">Course
+        <select id="enroll-course" name="course_id" required>
+          {% for c in courses %}<option value="{{ c['course_id'] }}">{{ c['code'] }} - {{ c['name'] }}</option>{% endfor %}
+        </select>
+      </label>
+      <button type="submit" class="btn btn-secondary">{{ icon('check', 15) }} Enroll</button>
+    </form>
+  </div>
+</section>
 
-<div class="card">
-  <h2>Flagged Comments ({{ flagged|length }})</h2>
+<section class="card" id="moderation" aria-labelledby="moderation-title">
+  <div class="card-header-row"><div><h2 id="moderation-title">Moderation queue</h2><p class="muted">Review comments that need a human decision.</p></div><span class="semester-chip">{{ flagged|length }} flagged</span></div>
   {% if not flagged %}
-    <p class="muted">Nothing flagged for moderation.</p>
+    {{ empty_state("Nothing flagged", "There are no comments waiting for moderation.", "check") }}
   {% else %}
   <ul class="comment-list">
     {% for f in flagged %}
-    <li class="comment-item sentiment-negative">
-      <strong>{{ f['code'] }}</strong>: "{{ f['comment'] }}"
+    <li class="comment-item">
+      <div><strong>{{ f['code'] }}</strong> · {{ f['course_name'] }} {{ badge('flagged', 'negative') }}</div>
+      <span>“{{ f['comment'] }}”</span>
       <div class="moderation-actions">
         <form method="post" action="{{ url_for('admin.moderate_flagged', feedback_id=f['feedback_id']) }}" class="inline-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="decision" value="approve">
-          <button type="submit" class="btn-secondary">Approve</button>
+          <button type="submit" class="btn btn-secondary btn-sm">{{ icon('check', 15) }} Approve</button>
         </form>
-        <form method="post" action="{{ url_for('admin.moderate_flagged', feedback_id=f['feedback_id']) }}" class="inline-form">
+        <form method="post" action="{{ url_for('admin.moderate_flagged', feedback_id=f['feedback_id']) }}" class="inline-form" onsubmit="return confirm('Remove this comment from published feedback?');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="decision" value="remove">
-          <button type="submit" class="btn-danger">Remove</button>
+          <button type="submit" class="btn btn-danger btn-sm">{{ icon('close', 15) }} Remove</button>
         </form>
       </div>
     </li>
     {% endfor %}
   </ul>
   {% endif %}
-</div>
+</section>
 {% endblock %}

@@ -52,7 +52,6 @@ CREATE TABLE submission_log (
   user_id INTEGER NOT NULL REFERENCES users(user_id),
   course_id INTEGER NOT NULL REFERENCES courses(course_id),
   cycle_id INTEGER NOT NULL REFERENCES feedback_cycles(cycle_id),
-  submitted_at DATETIME NOT NULL,
   PRIMARY KEY (user_id, course_id, cycle_id)
 );
 

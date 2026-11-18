@@ -1,0 +1,34 @@
+{% macro icon(name, size=18, label=None) -%}
+<svg class="icon" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+     {% if label %}role="img" aria-label="{{ label }}"{% else %}aria-hidden="true"{% endif %}>
+  {% if name == 'check' %}<path d="m5 12 4 4L19 6"/>{% endif %}
+  {% if name == 'lock' %}<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>{% endif %}
+  {% if name == 'spark' %}<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/>{% endif %}
+  {% if name == 'menu' %}<path d="M4 6h16M4 12h16M4 18h16"/>{% endif %}
+  {% if name == 'close' %}<path d="m6 6 12 12M18 6 6 18"/>{% endif %}
+  {% if name == 'info' %}<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>{% endif %}
+</svg>
+{%- endmacro %}
+
+{% macro page_header(title, subtitle='', actions=None) -%}
+<header class="page-header">
+  <div class="page-header-copy">
+    <h1>{{ title }}</h1>
+    {% if subtitle %}<p>{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if actions %}<div class="page-actions">{{ actions }}</div>{% endif %}
+</header>
+{%- endmacro %}
+
+{% macro badge(value, kind=None) -%}
+<span class="badge {% if kind %}badge-{{ kind }}{% else %}badge-{{ value|lower }}{% endif %}">{{ value }}</span>
+{%- endmacro %}
+
+{% macro empty_state(title, message, icon_name='info') -%}
+<div class="empty-state">
+  {{ icon(icon_name, 32) }}
+  <h2>{{ title }}</h2>
+  <p>{{ message }}</p>
+</div>
+{%- endmacro %}

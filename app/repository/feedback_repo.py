@@ -8,6 +8,7 @@ this module or in the dashboard/report services.
 from __future__ import annotations
 
 import sqlite3
+from contextlib import contextmanager
 from typing import Optional
 
 from .db import get_db
@@ -17,6 +18,17 @@ ASPECT_NAMES = ("teaching", "content", "labs", "infrastructure", "assessment")
 
 class DuplicateSubmissionError(Exception):
     """Raised when a student has already submitted feedback for this course+cycle."""
+
+
+@contextmanager
+def submission_transaction():
+    db = get_db()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
 
 def has_submitted(user_id: int, course_id: int, cycle_id: int) -> bool:
@@ -39,11 +51,9 @@ def record_submission(user_id: int, course_id: int, cycle_id: int) -> None:
     db = get_db()
     try:
         db.execute(
-            "INSERT INTO submission_log(user_id, course_id, cycle_id, submitted_at) "
-            "VALUES (?, ?, ?, datetime('now'))",
+            "INSERT INTO submission_log(user_id, course_id, cycle_id) VALUES (?, ?, ?)",
             (user_id, course_id, cycle_id),
         )
-        db.commit()
     except sqlite3.IntegrityError as exc:
         raise DuplicateSubmissionError() from exc
 
@@ -54,7 +64,6 @@ def create_feedback(course_id: int, cycle_id: int, comment: str) -> int:
         "INSERT INTO feedback(course_id, cycle_id, comment, status) VALUES (?, ?, ?, 'submitted')",
         (course_id, cycle_id, comment),
     )
-    db.commit()
     return cur.lastrowid
 
 
@@ -64,7 +73,6 @@ def add_ratings(feedback_id: int, scores: dict[str, int]) -> None:
         "INSERT INTO ratings(feedback_id, aspect, score) VALUES (?, ?, ?)",
         [(feedback_id, aspect, scores[aspect]) for aspect in ASPECT_NAMES if aspect in scores],
     )
-    db.commit()
 
 
 def save_sentiment(feedback_id: int, label: str, score: float, confidence: float,
@@ -107,7 +115,7 @@ def aggregate_ratings_by_aspect(course_id: int, cycle_id: Optional[int] = None) 
         f"""SELECT r.aspect, AVG(r.score) AS avg_score, COUNT(*) AS n
             FROM ratings r
             JOIN feedback f ON f.feedback_id = r.feedback_id
-            WHERE f.course_id = ? {cycle_clause}
+            WHERE f.course_id = ? AND f.status = 'published' {cycle_clause}
             GROUP BY r.aspect""",
         params,
     ).fetchall()
@@ -140,7 +148,7 @@ def overall_average(course_id: int, cycle_id: Optional[int] = None) -> Optional[
     row = db.execute(
         f"""SELECT AVG(r.score) AS avg_score
             FROM ratings r JOIN feedback f ON f.feedback_id = r.feedback_id
-            WHERE f.course_id = ? {cycle_clause}""",
+            WHERE f.course_id = ? AND f.status = 'published' {cycle_clause}""",
         params,
     ).fetchone()
     return row["avg_score"] if row and row["avg_score"] is not None else None
@@ -154,7 +162,7 @@ def response_count(course_id: int, cycle_id: Optional[int] = None) -> int:
         cycle_clause = "AND cycle_id = ?"
         params.append(cycle_id)
     row = db.execute(
-        f"SELECT COUNT(*) AS n FROM feedback WHERE course_id = ? {cycle_clause}", params
+        f"SELECT COUNT(*) AS n FROM feedback WHERE course_id = ? AND status = 'published' {cycle_clause}", params
     ).fetchone()
     return row["n"]
 
@@ -203,10 +211,12 @@ def department_summary(semester: Optional[int] = None, course_id: Optional[int] 
     return db.execute(
         f"""SELECT c.course_id, c.code, c.name, c.semester, u.name AS faculty_name,
                    (SELECT AVG(score) FROM ratings r JOIN feedback f ON f.feedback_id = r.feedback_id
-                    WHERE f.course_id = c.course_id) AS avg_rating,
-                   (SELECT COUNT(*) FROM feedback f WHERE f.course_id = c.course_id) AS responses,
+                    WHERE f.course_id = c.course_id AND f.status = 'published') AS avg_rating,
+                   (SELECT COUNT(*) FROM feedback f
+                    WHERE f.course_id = c.course_id AND f.status = 'published') AS responses,
                    (SELECT COUNT(*) FROM feedback f JOIN sentiment_results s ON s.feedback_id = f.feedback_id
-                    WHERE f.course_id = c.course_id AND s.label = 'negative') AS negative_count
+                    WHERE f.course_id = c.course_id AND f.status = 'published'
+                      AND s.label = 'negative') AS negative_count
             FROM courses c
             JOIN users u ON u.user_id = c.faculty_id
             WHERE {where}
@@ -231,6 +241,7 @@ def sentiment_trend_by_semester(aspect: Optional[str] = None) -> list[sqlite3.Ro
             JOIN courses c ON c.course_id = f.course_id
             JOIN sentiment_results s ON s.feedback_id = f.feedback_id
             {aspect_join}
+            WHERE f.status = 'published'
             GROUP BY c.semester
             ORDER BY c.semester""",
         params,

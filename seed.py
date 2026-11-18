@@ -97,7 +97,7 @@ def run():
             for i, sid in enumerate(student_pool):
                 comment, *scores = rng.choice(SAMPLE_COMMENTS)
                 conn.execute(
-                    "INSERT INTO submission_log(user_id, course_id, cycle_id, submitted_at) VALUES (?,?,?,datetime('now'))",
+                    "INSERT INTO submission_log(user_id, course_id, cycle_id) VALUES (?,?,?)",
                     (sid, course_id, cycle_id),
                 )
                 fid = conn.execute(

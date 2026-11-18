@@ -6,8 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def _load_dotenv(path: Path) -> None:
-    """Minimal .env loader so the app works without python-dotenv at import time
-    (python-dotenv is still used in run.py for convenience)."""
+    """Load simple KEY=VALUE settings from .env without external dependencies."""
     if not path.exists():
         return
     for line in path.read_text(encoding="utf-8").splitlines():

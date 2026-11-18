@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import io
+from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -17,6 +18,16 @@ from reportlab.lib.styles import getSampleStyleSheet
 from . import dashboard_service
 
 
+def _escaped(value) -> str:
+    return escape(str(value))
+
+
+def _safe_cell(value):
+    if isinstance(value, str) and value.startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
+
 def faculty_csv(course, cycle_id: int | None) -> io.BytesIO:
     view = dashboard_service.faculty_course_view(course["course_id"], cycle_id)
     comments = dashboard_service.faculty_comments(course["course_id"], cycle_id)
@@ -24,21 +35,21 @@ def faculty_csv(course, cycle_id: int | None) -> io.BytesIO:
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(["IIPS Feedback Report - Faculty"])
-    writer.writerow(["Course", f"{course['code']} - {course['name']}"])
+    writer.writerow(["Course", _safe_cell(f"{course['code']} - {course['name']}")])
     writer.writerow(["Average Rating", view["avg_overall"]])
     writer.writerow(["Responses", view["responses"]])
     writer.writerow([])
     writer.writerow(["Aspect", "Average Score"])
     for aspect, score in view["ratings_by_aspect"].items():
-        writer.writerow([aspect, score])
+        writer.writerow([_safe_cell(aspect), score])
     writer.writerow([])
     writer.writerow(["Sentiment", "Percent"])
     for label, pct in view["sentiment_pct"].items():
-        writer.writerow([label, pct])
+        writer.writerow([_safe_cell(label), pct])
     writer.writerow([])
     writer.writerow(["Anonymous Comment", "Sentiment", "Confidence"])
     for c in comments:
-        writer.writerow([c["comment"], c["label"], c["confidence"]])
+        writer.writerow([_safe_cell(c["comment"]), _safe_cell(c["label"]), c["confidence"]])
 
     return io.BytesIO(buf.getvalue().encode("utf-8"))
 
@@ -51,7 +62,10 @@ def faculty_pdf(course, cycle_id: int | None) -> io.BytesIO:
     doc = SimpleDocTemplate(buf, pagesize=A4)
     styles = getSampleStyleSheet()
     elements = [
-        Paragraph(f"IIPS Feedback Report &mdash; {course['code']} {course['name']}", styles["Title"]),
+        Paragraph(
+            f"IIPS Feedback Report &mdash; {_escaped(course['code'])} {_escaped(course['name'])}",
+            styles["Title"],
+        ),
         Spacer(1, 12),
         Paragraph(f"Average Rating: {view['avg_overall']} / 5 &nbsp;&nbsp; Responses: {view['responses']}",
                    styles["Normal"]),
@@ -68,7 +82,7 @@ def faculty_pdf(course, cycle_id: int | None) -> io.BytesIO:
 
     elements.append(Paragraph("Anonymous Comments", styles["Heading2"]))
     for c in comments[:50]:
-        elements.append(Paragraph(f"[{c['label']}] {c['comment']}", styles["Normal"]))
+        elements.append(Paragraph(f"[{_escaped(c['label'])}] {_escaped(c['comment'])}", styles["Normal"]))
         elements.append(Spacer(1, 4))
 
     doc.build(elements)
@@ -83,7 +97,14 @@ def department_csv(filters: dict) -> io.BytesIO:
     writer.writerow(["IIPS Feedback Report - Department"])
     writer.writerow(["Course", "Faculty", "Semester", "Avg Rating", "Negative %", "Responses"])
     for c in view["courses"]:
-        writer.writerow([c["code"], c["faculty_name"], c["semester"], c["avg_rating"], c["negative_pct"], c["responses"]])
+        writer.writerow([
+            _safe_cell(c["code"]),
+            _safe_cell(c["faculty_name"]),
+            c["semester"],
+            c["avg_rating"],
+            c["negative_pct"],
+            c["responses"],
+        ])
     return io.BytesIO(buf.getvalue().encode("utf-8"))
 
 

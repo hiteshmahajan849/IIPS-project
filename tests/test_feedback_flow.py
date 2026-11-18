@@ -1,6 +1,9 @@
 """Integration tests for feedback submission (TC-01, TC-05) via the real
 Flask routes, using the service layer underneath."""
+import pytest
+
 from app.repository import cycle_repo, feedback_repo
+from app.services import feedback_service
 from tests.conftest import login
 
 
@@ -66,3 +69,25 @@ def test_pending_courses_excludes_already_submitted(app, client):
         pending_ids = {c["course_id"] for c in pending}
         assert ids["course1"] not in pending_ids
         assert ids["course2"] in pending_ids
+
+
+def test_submission_rolls_back_log_and_feedback_on_rating_failure(app, monkeypatch):
+    ids = app.config["SEED_IDS"]
+    form = {
+        "teaching": "4", "content": "4", "labs": "4",
+        "infrastructure": "4", "assessment": "4", "comment": "clear",
+    }
+
+    def fail_add_ratings(_feedback_id, _scores):
+        raise RuntimeError("rating insert failed")
+
+    monkeypatch.setattr(feedback_repo, "add_ratings", fail_add_ratings)
+    with app.app_context(), pytest.raises(RuntimeError):
+        feedback_service.submit(ids["student1"], ids["course1"], form)
+
+    with app.app_context():
+        db = feedback_repo.get_db()
+        assert not feedback_repo.has_submitted(ids["student1"], ids["course1"], ids["open_cycle"])
+        assert db.execute(
+            "SELECT COUNT(*) FROM feedback WHERE course_id = ?", (ids["course1"],)
+        ).fetchone()[0] == 0

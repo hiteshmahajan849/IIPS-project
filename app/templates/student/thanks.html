@@ -1,9 +1,14 @@
 {% extends "base.html" %}
+{% from "_components.html" import icon, page_header %}
 {% block title %}Thank You{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Thank you!</h1>
-  <p>Your feedback has been submitted anonymously and will help improve the course.</p>
-  <a class="btn-primary" href="{{ url_for('feedback.courses') }}">Back to My Courses</a>
-</div>
+<section class="card thank-you" aria-labelledby="thanks-title">
+  <svg class="check-mark" width="104" height="104" viewBox="0 0 104 104" aria-hidden="true">
+    <circle cx="52" cy="52" r="44"></circle>
+    <path d="m31 53 14 14 29-31" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
+  </svg>
+  <h1 id="thanks-title">Thank you for sharing.</h1>
+  <p class="muted">Your feedback has been submitted anonymously and will help improve the course.</p>
+  <a class="btn btn-primary" href="{{ url_for('feedback.courses') }}">Back to My Courses {{ icon('check', 16) }}</a>
+</section>
 {% endblock %}

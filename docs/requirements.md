@@ -515,7 +515,6 @@ erDiagram
     int user_id PK
     int course_id PK
     int cycle_id PK
-    datetime submitted_at
   }
   FEEDBACK {
     int feedback_id PK
@@ -586,7 +585,6 @@ CREATE TABLE submission_log (
   user_id INTEGER REFERENCES users(user_id),
   course_id INTEGER REFERENCES courses(course_id),
   cycle_id INTEGER REFERENCES feedback_cycles(cycle_id),
-  submitted_at DATETIME NOT NULL,
   PRIMARY KEY (user_id, course_id, cycle_id)
 );
 

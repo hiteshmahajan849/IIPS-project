@@ -1,25 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
+{% from "_components.html" import icon %}
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a43">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23102a43'/%3E%3Cpath d='M16 42 32 12l16 30h-8l-3-7H27l-3 7zM30 29h4l-2-6z' fill='%23f6bf7d'/%3E%3C/svg%3E">
   <title>{% block title %}IIPS Feedback System{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block head %}{% endblock %}
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">IIPS Feedback &amp; Sentiment System</div>
+    <a class="brand" href="{{ url_for('auth.index') }}">
+      <span class="brand-mark" aria-hidden="true">I</span>
+      <span>IIPS Feedback</span>
+    </a>
     {% if current_role %}
-    <nav class="nav">
-      {% if current_role == 'student' %}<a href="{{ url_for('feedback.courses') }}">My Courses</a>{% endif %}
-      {% if current_role == 'faculty' %}<a href="{{ url_for('dashboard.faculty_home') }}">Dashboard</a>{% endif %}
-      {% if current_role == 'hod' %}<a href="{{ url_for('dashboard.hod_home') }}">Department Dashboard</a>{% endif %}
-      {% if current_role == 'admin' %}<a href="{{ url_for('admin.panel') }}">Admin Panel</a>{% endif %}
-      <span class="user-chip">{{ current_name }} ({{ current_role }})</span>
+    <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="primary-navigation">
+      {{ icon('menu', 22) if icon is defined else '' }}
+    </button>
+    <nav class="nav" id="primary-navigation" aria-label="Primary navigation">
+      <div class="nav-links">
+      {% if current_role == 'student' %}<a class="{% if request.endpoint == 'feedback.courses' %}active{% endif %}" href="{{ url_for('feedback.courses') }}">My Courses</a>{% endif %}
+      {% if current_role == 'faculty' %}<a class="{% if request.endpoint == 'dashboard.faculty_home' %}active{% endif %}" href="{{ url_for('dashboard.faculty_home') }}">Dashboard</a>{% endif %}
+      {% if current_role == 'hod' %}<a class="{% if request.endpoint == 'dashboard.hod_home' %}active{% endif %}" href="{{ url_for('dashboard.hod_home') }}">Department Dashboard</a>{% endif %}
+      {% if current_role == 'admin' %}<a class="{% if request.endpoint == 'admin.panel' %}active{% endif %}" href="{{ url_for('admin.panel') }}">Admin Panel</a>{% endif %}
+      </div>
+      <span class="user-chip">
+        <span class="avatar" aria-hidden="true">{{ current_name.split() | map('first') | join('') | upper if current_name else '?' }}</span>
+        <span>{{ current_name }} <span class="sr-only">role:</span> ({{ current_role }})</span>
+      </span>
       <form action="{{ url_for('auth.logout') }}" method="post" class="inline-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button type="submit" class="link-button">Logout</button>
+        <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
       </form>
     </nav>
     {% endif %}
@@ -30,7 +44,10 @@
       {% if messages %}
         <div class="flash-stack">
           {% for category, message in messages %}
-            <div class="flash flash-{{ category }}">{{ message }}</div>
+            <div class="flash flash-{{ category }}" role="status">
+              <span>{{ message }}</span>
+              <button type="button" class="flash-close" aria-label="Dismiss message">&times;</button>
+            </div>
           {% endfor %}
         </div>
       {% endif %}
@@ -40,8 +57,27 @@
   </main>
 
   <footer class="footer">
-    IIPS AI-Based Student Feedback &amp; Sentiment Analysis System &mdash; prototype build.
+    <strong>IIPS AI-Based Student Feedback &amp; Sentiment Analysis System</strong>
+    <br>Built for better classes, with privacy at the centre.
   </footer>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggle = document.querySelector(".nav-toggle");
+      const nav = document.getElementById("primary-navigation");
+      if (toggle && nav) {
+        toggle.addEventListener("click", function () {
+          const expanded = toggle.getAttribute("aria-expanded") === "true";
+          toggle.setAttribute("aria-expanded", String(!expanded));
+          nav.classList.toggle("is-open", !expanded);
+        });
+      }
+      document.querySelectorAll(".flash-close").forEach(function (button) {
+        button.addEventListener("click", function () {
+          button.closest(".flash").remove();
+        });
+      });
+    });
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

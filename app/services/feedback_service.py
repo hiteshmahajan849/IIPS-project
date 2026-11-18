@@ -55,10 +55,10 @@ def submit(student_id: int, course_id: int, form) -> dict:
     comment = clean_comment(form.get("comment"))
 
     # Identity is written ONLY to submission_log, never to `feedback` (FR-07).
-    feedback_repo.record_submission(student_id, course_id, cycle["cycle_id"])
-
-    feedback_id = feedback_repo.create_feedback(course_id, cycle["cycle_id"], comment)
-    feedback_repo.add_ratings(feedback_id, scores)
+    with feedback_repo.submission_transaction():
+        feedback_repo.record_submission(student_id, course_id, cycle["cycle_id"])
+        feedback_id = feedback_repo.create_feedback(course_id, cycle["cycle_id"], comment)
+        feedback_repo.add_ratings(feedback_id, scores)
 
     analyzer = get_analyzer(current_app.config["SENTIMENT_ANALYZER"])
     try:

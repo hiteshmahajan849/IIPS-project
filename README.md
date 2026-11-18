@@ -94,7 +94,8 @@ IIPS_project/
 ├── .env.example
 ├── .gitignore
 ├── pytest.ini
-├── tests/                         # 25 tests across 4 files
+├── docs/                          # requirements and project documentation
+├── tests/                         # 31 tests across 5 files (25 original + 6 regression)
 └── README.md
 ```
 
@@ -136,7 +137,7 @@ Visit **http://127.0.0.1:5000**.
 pytest -v
 ```
 
-25 tests, covering: duplicate-submission blocking (TC-01), Hinglish sentiment
+31 tests across 5 files, including the 25 original tests covering: duplicate-submission blocking (TC-01), Hinglish sentiment
 labels (TC-02/TC-03), cross-faculty access denial (TC-04), cycle-closed
 rejection (TC-05), absence of student identity in dashboards/exports (TC-06),
 and alert creation on threshold breach (TC-07), plus NLP unit tests and an
@@ -162,7 +163,9 @@ Per the requirements document's strict anonymity rule:
 - The `feedback` table has **no student/user identifier column**. It is
   physically impossible to join a comment back to a student from this table.
 - `submission_log` records `(user_id, course_id, cycle_id)` **only** to
-  enforce "one submission per student per course per cycle." It is never
+  enforce "one submission per student per course per cycle"; it stores no
+  submission timestamp that could be correlated with `feedback.created_at`.
+  It is never
   joined against `feedback`, `ratings`, or `sentiment_results` by any query
   in the codebase (see `app/repository/feedback_repo.py`).
 - Dashboards, analytics, CSV/PDF exports select only aggregated numbers and
